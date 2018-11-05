@@ -40,7 +40,24 @@ function qualitativeColorsCategory2018(d) {
     d === "Repressed" ? '#d73027' :
                     '#000000';
 }
-
+function choroplethizeCorruptionIndex2017(d) {
+    return d > 153 ? '#b10026' :
+    d > 122 ? '#e31a1c' :
+    d > 96 ? '#fc4e2a' :
+    d > 74 ? '#fd8d3c' :
+    d > 48 ? '#feb24c' :
+    d > 21 ? '#fed976' :
+            '#ffffb2';
+}
+function choroplethizeGNIPerCapita2017(d) {
+    return d > 61070 ? '#fee5d9' :
+    d > 46310 ? '#fcbba1' :
+    d > 31430 ? '#fc9272' :
+    d > 20240 ? '#fb6a4a' :
+    d > 10140 ? '#ef3b2c' :
+    d > 3560 ? '#cb181d' :
+            '#99000d';
+}
 // PINTAR LAS FIGURAS CON LOS COLORES
 function stylePopulation(feature) {
     return {
@@ -72,6 +89,26 @@ function styleCategories(feature) {
         fillColor: qualitativeColorsCategory2018(feature.properties.Category)
     }
 }
+function styleCorruption(feature) {
+    return {
+        weight: .75,
+        opacity: 0.5,
+        color: 'grey',
+        dashArray: '0',
+        fillOpacity: 0.9,
+        fillColor: choroplethizeCorruptionIndex2017(feature.properties.indices2018_Corruption_Index_2017)
+    }
+}
+function styleGNIPerCapita(feature) {
+    return {
+        weight: .75,
+        opacity: 0.5,
+        color: 'grey',
+        dashArray: '0',
+        fillOpacity: 0.9,
+        fillColor: choroplethizeGNIPerCapita2017(feature.properties.indices2018_GNI_Per_Capita2017)
+    }
+}
 // CREAR CAJAS AL MOMENTO DE HACER CLIC
 function geojsonPopupPopulation(feature, layer) {
     if (feature.properties.NAME_LONG) {
@@ -90,6 +127,20 @@ function geojsonPopupCategory(feature, layer) {
         return layer.bindPopup('Country:   ' + feature.properties.NAME_LONG + '<br>2018 Economic Freedom Index: '
          + feature.properties.Economic_Freedom_Rank_2018
          + '<br>Category: ' + feature.properties.Category)
+    }
+}
+function geojsonPopupCorruption(feature, layer) {
+    if (feature.properties.NAME_LONG) {
+        return layer.bindPopup('Country:   ' + feature.properties.NAME_LONG + '<br>2017 Corruption Index: '
+         + feature.properties.indices2018_Corruption_Index_2017
+         + '<br>Category: ' + feature.properties.Category)
+    }
+}
+function geojsonPopupGNIPerCapita(feature, layer) {
+    if (feature.properties.NAME_LONG) {
+        return layer.bindPopup('Country:   ' + feature.properties.NAME_LONG + '<br>2017 GNI Per Capita: '
+         + feature.properties.indices2018_GNI_Per_Capita2017
+         + '<br>GNI Per Capita Ranking: ' + feature.properties.indices2018_GNI_Per_Capita_Rank2017)
     }
 }
 // CREAR VARIABLES PARA LAS CAPAS
@@ -115,11 +166,27 @@ var CategoryLayer = L.geoJSON(countries, {
         return L.marker(latlng);
     }
 });
+var CorruptionLayer = L.geoJSON(countries, {
+    style: styleCorruption,
+    onEachFeature: geojsonPopupCorruption,
+    pointToLayer: function (feature, latlng) {
+        return L.marker(latlng);
+    }
+});
+var GNIPerCapitaLayer = L.geoJSON(countries, {
+    style: styleGNIPerCapita,
+    onEachFeature: geojsonPopupGNIPerCapita,
+    pointToLayer: function (feature, latlng) {
+        return L.marker(latlng);
+    }
+});
 
 // dibujar al mapa
-PopulationLayer.addTo(mymap);
+CategoryLayer.addTo(mymap);
 var featureLayers = {
     "2017 Population": PopulationLayer,
+    "2017 Corruption": CorruptionLayer,
+    "2017 GNI Per Capita": GNIPerCapitaLayer,
     "2018 Economic Freedom Index": FreedomLayer,
     "2018 Category": CategoryLayer
 };
@@ -129,13 +196,15 @@ var geojson = L.control.layers(featureLayers, null, {
 
 // LEGEND STARTS HERE
 var Population2017Legend = L.control({ position: 'bottomright' });
+var Corruption2017Legend = L.control({ position: 'bottomright' });
+var GNIPerCapita2017Legend = L.control({ position: 'bottomright' });
 var Freedom2018Legend = L.control({ position: 'bottomright' });
 var Category2018Legend = L.control({ position: 'bottomright' });
 
 Population2017Legend.onAdd = function (mymap) {
     var div = L.DomUtil.create('div', 'info legend'),
         grades = [0, 13026129, 35623680, 68414135, 105350020, 157826578, 326625791, 1379302771],
-        labels = ['Country Population in 2017'],
+        labels = ['2017 Population'],
         fromLabel, from, toLabel, to;
     for (var i = 0; i < grades.length-1; i++) {
         from = grades[i];
@@ -154,7 +223,7 @@ Population2017Legend.onAdd = function (mymap) {
 Freedom2018Legend.onAdd = function (mymap) {
     var div = L.DomUtil.create('div', 'info legend'),
         grades = [0, 13, 39, 67, 95, 122, 150],
-        labels = ['Freedom Index in 2018'],
+        labels = ['2018 Freedom Index'],
         from, to;
     for (var i = 0; i < grades.length; i++) {
         from = grades[i];
@@ -183,9 +252,38 @@ Category2018Legend.onAdd = function (map) {
     div.innerHTML = labels.join('<br>');
     return div;
 };
-
-Population2017Legend.addTo(mymap);
-let currentLegend = Population2017Legend;
+Corruption2017Legend.onAdd = function (mymap) {
+    var div = L.DomUtil.create('div', 'info legend'),
+        grades = [0, 21, 48, 74, 96, 122, 153],
+        labels = ['2017 Corruption Index'],
+        from, to;
+    for (var i = 0; i < grades.length; i++) {
+        from = grades[i];
+        to = grades[i + 1];
+        labels.push(
+            '<i style="background:' + choroplethizeCorruptionIndex2017(from + 1) + '"></i> ' +
+            from + (to ? ' - ' + to : ' - 180'));
+    }
+    div.innerHTML = labels.join('<br>');
+    return div;
+};
+GNIPerCapita2017Legend.onAdd = function (mymap) {
+    var div = L.DomUtil.create('div', 'info legend'),
+        grades = [0, 3560, 10140, 20240, 31430, 46310, 61070],
+        labels = ['2017 GNI Per Capita'],
+        from, to;
+    for (var i = 0; i < grades.length; i++) {
+        from = grades[i];
+        to = grades[i + 1];
+        labels.push(
+            '<i style="background:' + choroplethizeGNIPerCapita2017(from + 1) + '"></i> ' +
+            from + (to ? ' - ' + to : ' - 80560'));
+    }
+    div.innerHTML = labels.join('<br>');
+    return div;
+};
+Category2018Legend.addTo(mymap);
+let currentLegend = Category2018Legend;
 
 // LEGEND Box
 mymap.on('baselayerchange', function (eventLayer) {
@@ -193,6 +291,16 @@ mymap.on('baselayerchange', function (eventLayer) {
         mymap.removeControl(currentLegend);
         currentLegend = Population2017Legend;
         Population2017Legend.addTo(mymap);
+    }
+    else if (eventLayer.name === '2017 Corruption') {
+        mymap.removeControl(currentLegend);
+        currentLegend = Corruption2017Legend;
+        Corruption2017Legend.addTo(mymap);
+    }
+    else if (eventLayer.name === '2017 GNI Per Capita') {
+        mymap.removeControl(currentLegend);
+        currentLegend = GNIPerCapita2017Legend;
+        GNIPerCapita2017Legend.addTo(mymap);
     }
     else if (eventLayer.name === '2018 Economic Freedom Index') {
         mymap.removeControl(currentLegend);
