@@ -85,6 +85,16 @@ function choroplethizePropertyRights2018(d) {
     d > 8 ? '#bfd3e6' :
             '#edf8fb';
 }
+function qualitativeEconomyCategory2018(d) {
+    return d === "1. Developed region: G7" ? '#8dd3c7' :
+    d === "2. Developed region: nonG7" ? '#ffffb3' :
+    d === "3. Emerging region: BRIC" ? '#bebada' :
+    d === "4. Emerging region: MIKT" ? '#fb8072' :
+    d === "5. Emerging region: G20" ? '#80b1d3' :
+    d === "6. Developing region" ? '#fdb462' :
+    d === "7. Least developed region" ? '#b3de69' :
+            '#000000'; // null values are black
+}
 
 // PINTAR LAS FIGURAS CON LOS COLORES
 function stylePopulation(feature) {
@@ -167,6 +177,16 @@ function stylePropertyRights(feature) {
         fillColor: choroplethizePropertyRights2018(feature.properties.indices2018_Property_Rights2018)
     }
 }
+function styleEconomyCategory(feature) {
+    return {
+        weight: .75,
+        opacity: 0.5,
+        color: 'grey',
+        dashArray: '0',
+        fillOpacity: 0.9,
+        fillColor: qualitativeEconomyCategory2018(feature.properties.ECONOMY)
+    }
+}
 // CREAR CAJAS AL MOMENTO DE HACER CLIC
 function geojsonPopupPopulation(feature, layer) {
     if (feature.properties.NAME_LONG) {
@@ -218,6 +238,12 @@ function geojsonPopupPropertyRights(feature, layer) {
     if (feature.properties.NAME_LONG) {
         return layer.bindPopup('Country:   ' + feature.properties.NAME_LONG + '<br>2018 Property Rights Index: '
          + feature.properties.indices2018_Property_Rights2018)
+    }
+}
+function geojsonPopupEconomyCategory(feature, layer) {
+    if (feature.properties.NAME_LONG) {
+        return layer.bindPopup('Country:   ' + feature.properties.NAME_LONG + '<br>2018 Economy Category: '
+         + feature.properties.ECONOMY)
     }
 }
 // CREAR VARIABLES PARA LAS CAPAS
@@ -278,17 +304,25 @@ var PropertyRightsLayer = L.geoJSON(countries, {
         return L.marker(latlng);
     }
 });
+var EconomyCategoryLayer = L.geoJSON(countries, {
+    style: styleEconomyCategory,
+    onEachFeature: geojsonPopupEconomyCategory,
+    pointToLayer: function (feature, latlng) {
+        return L.marker(latlng);
+    }
+});
 
 // dibujar al mapa
 CategoryLayer.addTo(mymap);
 var featureLayers = {
-    "2017 Population": PopulationLayer,
     "2017 Corruption": CorruptionLayer,
     "2017 Gross Domestic Product": GDPLayer,
     "2017 GNI Per Capita": GNIPerCapitaLayer,
+    "2017 Population": PopulationLayer,
+    "2018 Economic Freedom Category": CategoryLayer,
     "2018 Ease of Business": easeOfBusinessLayer,
     "2018 Economic Freedom Index": FreedomLayer,
-    "2018 Category": CategoryLayer,
+    "2018 Economy Category": EconomyCategoryLayer,
     "2018 Property Rights Index": PropertyRightsLayer,
 };
 var geojson = L.control.layers(featureLayers, null, {
@@ -303,6 +337,7 @@ var GNIPerCapita2017Legend = L.control({ position: 'bottomright' });
 var EaseOfBusiness2018Legend = L.control({ position: 'bottomright' });
 var Freedom2018Legend = L.control({ position: 'bottomright' });
 var Category2018Legend = L.control({ position: 'bottomright' });
+var EconomyCategory2018Legend = L.control({ position: 'bottomright' });
 var PropertyRights2018Legend = L.control({ position: 'bottomright' });
 
 Population2017Legend.onAdd = function (mymap) {
@@ -341,13 +376,11 @@ Freedom2018Legend.onAdd = function (mymap) {
 };
 Category2018Legend.onAdd = function (map) {
     var div = L.DomUtil.create('div', 'info legend'),
-        grades = [1,2,3,4,5,6,7],
         gradeLabel = ['Free', 'Moderately Free', 'Mostly Free Economies',
     'Mostly Unfree', 'Not Ranked', 'Repressed'],
-        labels = ['Category 2018'],
-        num,code;
+        labels = ['2018 Economic Freedom Category'],
+        code;
     for (var i = 1; i <= 7; i++) {
-        num = grades[i];
         code = gradeLabel[i-1];
         labels.push(
             '<i style="background:' + qualitativeColorsCategory2018(code) + '"></i> ' +
@@ -435,6 +468,23 @@ PropertyRights2018Legend.onAdd = function (mymap) {
     div.innerHTML = labels.join('<br>');
     return div;
 };
+
+EconomyCategory2018Legend.onAdd = function (map) {
+    var div = L.DomUtil.create('div', 'info legend'),
+        gradeLabel = ['1. Developed region: G7', '2. Developed region: nonG7', '3. Emerging region: BRIC',
+    '4. Emerging region: MIKT', '5. Emerging region: G20', '6. Developing region', 
+    '7. Least developed region'],
+        labels = ['Economy Category 2018'],
+        code;
+    for (var i = 1; i <= 7; i++) {
+        code = gradeLabel[i-1];
+        labels.push(
+            '<i style="background:' + qualitativeEconomyCategory2018(code) + '"></i> ' +
+            code);
+    }
+    div.innerHTML = labels.join('<br>');
+    return div;
+};
 Category2018Legend.addTo(mymap);
 let currentLegend = Category2018Legend;
 
@@ -470,7 +520,7 @@ mymap.on('baselayerchange', function (eventLayer) {
         currentLegend = Freedom2018Legend;
         Freedom2018Legend.addTo(mymap);
     }
-    else if (eventLayer.name === '2018 Category') {
+    else if (eventLayer.name === '2018 Economic Freedom Category') {
         mymap.removeControl(currentLegend);
         currentLegend = Category2018Legend;
         Category2018Legend.addTo(mymap);
@@ -479,5 +529,10 @@ mymap.on('baselayerchange', function (eventLayer) {
         mymap.removeControl(currentLegend);
         currentLegend = PropertyRights2018Legend;
         PropertyRights2018Legend.addTo(mymap);
+    }
+    else if (eventLayer.name === '2018 Economy Category') {
+        mymap.removeControl(currentLegend);
+        currentLegend = EconomyCategory2018Legend;
+        EconomyCategory2018Legend.addTo(mymap);
     }
 });
