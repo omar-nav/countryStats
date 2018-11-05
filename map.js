@@ -58,6 +58,34 @@ function choroplethizeGNIPerCapita2017(d) {
     d > 3560 ? '#cb181d' :
             '#99000d';
 }
+function choroplethizeGDP2017(d) {
+    return d > 12238 ? '#005824' :
+    d > 3677 ? '#238b45' :
+    d > 2056 ? '#41ae76' :
+    d > 1150 ? '#66c2a4' :
+    d > 493 ? '#99d8c9' :
+    d > 159 ? '#ccece6' :
+            '#edf8fb';
+}
+function choroplethizeEaseOfBusiness2018(d) {
+    return d > 153 ? '#6e016b' :
+    d > 115 ? '#88419d' :
+    d > 86 ? '#8c6bb1' :
+    d > 60 ? '#8c96c6' :
+    d > 35 ? '#9ebcda' :
+    d > 11 ? '#bfd3e6' :
+            '#edf8fb';
+}
+function choroplethizePropertyRights2018(d) {
+    return d > 106 ? '#6e016b' :
+    d > 85 ? '#88419d' :
+    d > 65 ? '#8c6bb1' :
+    d > 44 ? '#8c96c6' :
+    d > 26 ? '#9ebcda' :
+    d > 8 ? '#bfd3e6' :
+            '#edf8fb';
+}
+
 // PINTAR LAS FIGURAS CON LOS COLORES
 function stylePopulation(feature) {
     return {
@@ -109,6 +137,36 @@ function styleGNIPerCapita(feature) {
         fillColor: choroplethizeGNIPerCapita2017(feature.properties.indices2018_GNI_Per_Capita2017)
     }
 }
+function styleGDP(feature) {
+    return {
+        weight: .75,
+        opacity: 0.5,
+        color: 'grey',
+        dashArray: '0',
+        fillOpacity: 0.9,
+        fillColor: choroplethizeGDP2017(feature.properties.indices2018_GDP_Billions2017)
+    }
+}
+function styleEaseOfBusiness(feature) {
+    return {
+        weight: .75,
+        opacity: 0.5,
+        color: 'grey',
+        dashArray: '0',
+        fillOpacity: 0.9,
+        fillColor: choroplethizeEaseOfBusiness2018(feature.properties.indices2018_Ease_of_Business2018)
+    }
+}
+function stylePropertyRights(feature) {
+    return {
+        weight: .75,
+        opacity: 0.5,
+        color: 'grey',
+        dashArray: '0',
+        fillOpacity: 0.9,
+        fillColor: choroplethizePropertyRights2018(feature.properties.indices2018_Property_Rights2018)
+    }
+}
 // CREAR CAJAS AL MOMENTO DE HACER CLIC
 function geojsonPopupPopulation(feature, layer) {
     if (feature.properties.NAME_LONG) {
@@ -141,6 +199,25 @@ function geojsonPopupGNIPerCapita(feature, layer) {
         return layer.bindPopup('Country:   ' + feature.properties.NAME_LONG + '<br>2017 GNI Per Capita: '
          + feature.properties.indices2018_GNI_Per_Capita2017
          + '<br>GNI Per Capita Ranking: ' + feature.properties.indices2018_GNI_Per_Capita_Rank2017)
+    }
+}
+function geojsonPopupGDP(feature, layer) {
+    if (feature.properties.NAME_LONG) {
+        return layer.bindPopup('Country:   ' + feature.properties.NAME_LONG + '<br>2017 GDP in Billions: '
+         + numberWithCommas(parseInt(feature.properties.indices2018_GDP_Billions2017))
+         + '<br>2017 GDP Ranking: ' + feature.properties.indices2018_GDP_Billions_Rank2017)
+    }
+}
+function geojsonPopupEaseOfBusiness(feature, layer) {
+    if (feature.properties.NAME_LONG) {
+        return layer.bindPopup('Country:   ' + feature.properties.NAME_LONG + '<br>2018 Ease of Business: '
+         + feature.properties.indices2018_Ease_of_Business2018)
+    }
+}
+function geojsonPopupPropertyRights(feature, layer) {
+    if (feature.properties.NAME_LONG) {
+        return layer.bindPopup('Country:   ' + feature.properties.NAME_LONG + '<br>2018 Property Rights Index: '
+         + feature.properties.indices2018_Property_Rights2018)
     }
 }
 // CREAR VARIABLES PARA LAS CAPAS
@@ -180,15 +257,39 @@ var GNIPerCapitaLayer = L.geoJSON(countries, {
         return L.marker(latlng);
     }
 });
+var GDPLayer = L.geoJSON(countries, {
+    style: styleGDP,
+    onEachFeature: geojsonPopupGDP,
+    pointToLayer: function (feature, latlng) {
+        return L.marker(latlng);
+    }
+});
+var easeOfBusinessLayer = L.geoJSON(countries, {
+    style: styleEaseOfBusiness,
+    onEachFeature: geojsonPopupEaseOfBusiness,
+    pointToLayer: function (feature, latlng) {
+        return L.marker(latlng);
+    }
+});
+var PropertyRightsLayer = L.geoJSON(countries, {
+    style: stylePropertyRights,
+    onEachFeature: geojsonPopupPropertyRights,
+    pointToLayer: function (feature, latlng) {
+        return L.marker(latlng);
+    }
+});
 
 // dibujar al mapa
 CategoryLayer.addTo(mymap);
 var featureLayers = {
     "2017 Population": PopulationLayer,
     "2017 Corruption": CorruptionLayer,
+    "2017 Gross Domestic Product": GDPLayer,
     "2017 GNI Per Capita": GNIPerCapitaLayer,
+    "2018 Ease of Business": easeOfBusinessLayer,
     "2018 Economic Freedom Index": FreedomLayer,
-    "2018 Category": CategoryLayer
+    "2018 Category": CategoryLayer,
+    "2018 Property Rights Index": PropertyRightsLayer,
 };
 var geojson = L.control.layers(featureLayers, null, {
     collapsed: false
@@ -197,9 +298,12 @@ var geojson = L.control.layers(featureLayers, null, {
 // LEGEND STARTS HERE
 var Population2017Legend = L.control({ position: 'bottomright' });
 var Corruption2017Legend = L.control({ position: 'bottomright' });
+var GDP2017Legend = L.control({ position: 'bottomright' });
 var GNIPerCapita2017Legend = L.control({ position: 'bottomright' });
+var EaseOfBusiness2018Legend = L.control({ position: 'bottomright' });
 var Freedom2018Legend = L.control({ position: 'bottomright' });
 var Category2018Legend = L.control({ position: 'bottomright' });
+var PropertyRights2018Legend = L.control({ position: 'bottomright' });
 
 Population2017Legend.onAdd = function (mymap) {
     var div = L.DomUtil.create('div', 'info legend'),
@@ -282,6 +386,55 @@ GNIPerCapita2017Legend.onAdd = function (mymap) {
     div.innerHTML = labels.join('<br>');
     return div;
 };
+GDP2017Legend.onAdd = function (mymap) {
+    var div = L.DomUtil.create('div', 'info legend'),
+    grades = [0, 159, 493, 1150, 2056, 3677, 12238, 19391],
+    labels = ['2017 GDP in Billions'],
+    fromLabel, from, toLabel, to;
+    for (var i = 0; i < grades.length-1; i++) {
+        from = grades[i];
+        fromLabel = numberWithCommas(grades[i]);
+        to = grades[i + 1];
+        toLabel = numberWithCommas(grades[i + 1]);
+        labels.push(
+            '<i style="background:' + choroplethizeGDP2017(from + 1) + '"></i> ' +
+            fromLabel + (toLabel ? ' - ' + toLabel : ' - 19391'));
+            // last value of 19391 on line 76 not currently being used
+            // kept as placemarker 
+    }
+    div.innerHTML = labels.join('<br>');
+    return div;
+};
+EaseOfBusiness2018Legend.onAdd = function (mymap) {
+    var div = L.DomUtil.create('div', 'info legend'),
+        grades = [0, 11, 35, 60, 86, 115, 153],
+        labels = ['2018 Ease of Business'],
+        from, to;
+    for (var i = 0; i < grades.length; i++) {
+        from = grades[i];
+        to = grades[i + 1];
+        labels.push(
+            '<i style="background:' + choroplethizeEaseOfBusiness2018(from + 1) + '"></i> ' +
+            from + (to ? ' - ' + to : ' - 190'));
+    }
+    div.innerHTML = labels.join('<br>');
+    return div;
+};
+PropertyRights2018Legend.onAdd = function (mymap) {
+    var div = L.DomUtil.create('div', 'info legend'),
+        grades = [0, 8, 26, 44, 65, 85, 106],
+        labels = ['2018 Property Rights Index'],
+        from, to;
+    for (var i = 0; i < grades.length; i++) {
+        from = grades[i];
+        to = grades[i + 1];
+        labels.push(
+            '<i style="background:' + choroplethizePropertyRights2018(from + 1) + '"></i> ' +
+            from + (to ? ' - ' + to : ' - 125'));
+    }
+    div.innerHTML = labels.join('<br>');
+    return div;
+};
 Category2018Legend.addTo(mymap);
 let currentLegend = Category2018Legend;
 
@@ -297,10 +450,20 @@ mymap.on('baselayerchange', function (eventLayer) {
         currentLegend = Corruption2017Legend;
         Corruption2017Legend.addTo(mymap);
     }
+    else if (eventLayer.name === '2017 Gross Domestic Product') {
+        mymap.removeControl(currentLegend);
+        currentLegend = GDP2017Legend;
+        GDP2017Legend.addTo(mymap);
+    }
     else if (eventLayer.name === '2017 GNI Per Capita') {
         mymap.removeControl(currentLegend);
         currentLegend = GNIPerCapita2017Legend;
         GNIPerCapita2017Legend.addTo(mymap);
+    }
+    else if (eventLayer.name === '2018 Ease of Business') {
+        mymap.removeControl(currentLegend);
+        currentLegend = EaseOfBusiness2018Legend;
+        EaseOfBusiness2018Legend.addTo(mymap);
     }
     else if (eventLayer.name === '2018 Economic Freedom Index') {
         mymap.removeControl(currentLegend);
@@ -311,5 +474,10 @@ mymap.on('baselayerchange', function (eventLayer) {
         mymap.removeControl(currentLegend);
         currentLegend = Category2018Legend;
         Category2018Legend.addTo(mymap);
+    }
+    else if (eventLayer.name === '2018 Property Rights Index') {
+        mymap.removeControl(currentLegend);
+        currentLegend = PropertyRights2018Legend;
+        PropertyRights2018Legend.addTo(mymap);
     }
 });
